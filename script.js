@@ -1,67 +1,181 @@
-// Lấy các phần tử HTML mà chúng ta cần tương tác
-const pokemonContainer = document.getElementById('pokemon-container');
-const randomPokemonBtn = document.getElementById('random-pokemon-btn');
+// Các hàm tiện ích
+const API_URL = 'https://pokeapi.co/api/v2/pokemon/';
 
-// Thêm sự kiện click vào nút bấm
-randomPokemonBtn.addEventListener('click', getRandomPokemon);
-
-/**
- * Hàm không đồng bộ để lấy dữ liệu của một Pokémon ngẫu nhiên từ PokéAPI
- */
-async function getRandomPokemon() {
+async function fetchPokemon(query) {
     try {
-        // Xóa nội dung cũ để chuẩn bị hiển thị Pokémon mới
-        pokemonContainer.innerHTML = '';
-        pokemonContainer.innerHTML = '<h2>Đang tải...</h2>';
-
-        // Tạo một ID ngẫu nhiên từ 1 đến 1000
-        const randomId = Math.floor(Math.random() * 1000) + 1;
-
-        // Gọi API để lấy dữ liệu Pokémon theo ID ngẫu nhiên
-        const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
-        
+        const response = await fetch(`${API_URL}${query}`);
         if (!response.ok) {
-            throw new Error('Không thể lấy dữ liệu Pokémon');
+            throw new Error('Không tìm thấy Pokémon này');
         }
-
-        const data = await response.json();
-
-        // Hiển thị dữ liệu lên giao diện
-        displayPokemon(data);
-
+        return await response.json();
     } catch (error) {
-        // Xử lý và hiển thị lỗi nếu có
-        pokemonContainer.innerHTML = `<h2>Có lỗi xảy ra: ${error.message}</h2>`;
-        console.error('Lỗi khi lấy dữ liệu Pokémon:', error);
+        console.error(error);
+        return null;
     }
 }
 
-/**
- * Hàm để hiển thị thông tin Pokémon đã lấy được lên giao diện người dùng
- * @param {Object} pokemonData - Dữ liệu Pokémon được trả về từ API
- */
-function displayPokemon(pokemonData) {
-    // Xóa thông báo tải
-    pokemonContainer.innerHTML = '';
+function renderPokemon(container, data) {
+    if (!data) {
+        container.innerHTML = `<p>Không tìm thấy Pokémon.</p>`;
+        return;
+    }
+    container.innerHTML = `
+        <h2>${data.name.charAt(0).toUpperCase() + data.name.slice(1)}</h2>
+        <img src="${data.sprites.front_default}" alt="${data.name}">
+        <p>ID: ${data.id}</p>
+        <p>Hệ: ${data.types.map(t => t.type.name).join(', ')}</p>
+        <h3>Chỉ số:</h3>
+        <ul>
+            ${data.stats.map(s => `<li>${s.stat.name}: ${s.base_stat}</li>`).join('')}
+        </ul>
+    `;
+}
 
-    // Tạo các phần tử HTML để hiển thị thông tin
-    const pokemonName = document.createElement('h2');
-    pokemonName.textContent = pokemonData.name.charAt(0).toUpperCase() + pokemonData.name.slice(1);
+// Chức năng chuyển đổi giữa các tab
+const sections = document.querySelectorAll('main section');
+document.querySelectorAll('nav button').forEach(button => {
+    button.addEventListener('click', () => {
+        sections.forEach(sec => sec.classList.remove('active'));
+        sections.forEach(sec => sec.classList.add('hidden'));
+        const targetId = button.id.replace('nav-', '') + '-pokemon-section';
+        document.getElementById(targetId).classList.add('active');
+        document.getElementById(targetId).classList.remove('hidden');
+    });
+});
 
-    const pokemonImage = document.createElement('img');
-    pokemonImage.src = pokemonData.sprites.front_default;
-    pokemonImage.alt = pokemonData.name;
+// 1. Phần ngẫu nhiên
+const randomBtn = document.getElementById('random-btn');
+const randomContainer = document.getElementById('random-container');
 
-    const pokemonId = document.createElement('p');
-    pokemonId.textContent = `ID: ${pokemonData.id}`;
+randomBtn.addEventListener('click', async () => {
+    randomContainer.innerHTML = '<p>Đang tìm kiếm...</p>';
+    const randomId = Math.floor(Math.random() * 1000) + 1;
+    const pokemon = await fetchPokemon(randomId);
+    renderPokemon(randomContainer, pokemon);
+});
 
-    const pokemonType = document.createElement('p');
-    const types = pokemonData.types.map(typeInfo => typeInfo.type.name.charAt(0).toUpperCase() + typeInfo.type.name.slice(1)).join(', ');
-    pokemonType.textContent = `Hệ: ${types}`;
+// 2. Phần tìm kiếm
+const searchBtn = document.getElementById('search-btn');
+const searchInput = document.getElementById('pokemon-search-input');
+const searchContainer = document.getElementById('search-container');
 
-    // Thêm các phần tử đã tạo vào vùng chứa
-    pokemonContainer.appendChild(pokemonName);
-    pokemonContainer.appendChild(pokemonImage);
-    pokemonContainer.appendChild(pokemonId);
-    pokemonContainer.appendChild(pokemonType);
+searchBtn.addEventListener('click', async () => {
+    const query = searchInput.value.toLowerCase();
+    searchContainer.innerHTML = '<p>Đang tìm kiếm...</p>';
+    const pokemon = await fetchPokemon(query);
+    renderPokemon(searchContainer, pokemon);
+});
+
+// 3. Phần Quiz
+const quizQuestionDiv = document.getElementById('quiz-question');
+const quizChoicesDiv = document.getElementById('quiz-choices');
+const quizFeedbackP = document.getElementById('quiz-feedback');
+const quizNextBtn = document.getElementById('quiz-next-btn');
+let currentPokemon, correctType;
+
+async function startQuiz() {
+    quizFeedbackP.textContent = '';
+    quizChoicesDiv.innerHTML = '';
+    quizNextBtn.style.display = 'none';
+
+    const randomId = Math.floor(Math.random() * 100) + 1; // Giới hạn cho quiz dễ hơn
+    currentPokemon = await fetchPokemon(randomId);
+
+    if (!currentPokemon) {
+        quizQuestionDiv.textContent = 'Lỗi tải câu hỏi.';
+        return;
+    }
+
+    correctType = currentPokemon.types[0].type.name;
+    const allTypes = await getAllPokemonTypes();
+    const incorrectTypes = allTypes.filter(type => type !== correctType).sort(() => 0.5 - Math.random()).slice(0, 3);
+    const choices = [...incorrectTypes, correctType].sort(() => 0.5 - Math.random());
+
+    quizQuestionDiv.innerHTML = `
+        <h2>Pokémon này thuộc hệ gì?</h2>
+        <img src="${currentPokemon.sprites.front_default}" alt="${currentPokemon.name}">
+    `;
+
+    choices.forEach(type => {
+        const button = document.createElement('button');
+        button.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+        button.addEventListener('click', () => checkAnswer(button, type));
+        quizChoicesDiv.appendChild(button);
+    });
+}
+
+function checkAnswer(button, chosenType) {
+    if (chosenType === correctType) {
+        quizFeedbackP.textContent = 'Chính xác! 🎉';
+        quizFeedbackP.style.color = 'green';
+    } else {
+        quizFeedbackP.textContent = `Sai rồi. Nó thuộc hệ ${correctType}.`;
+        quizFeedbackP.style.color = 'red';
+    }
+    document.querySelectorAll('#quiz-choices button').forEach(btn => btn.disabled = true);
+    quizNextBtn.style.display = 'block';
+}
+
+async function getAllPokemonTypes() {
+    const response = await fetch('https://pokeapi.co/api/v2/type');
+    const data = await response.json();
+    return data.results.map(type => type.name);
+}
+
+document.getElementById('nav-quiz').addEventListener('click', startQuiz);
+quizNextBtn.addEventListener('click', startQuiz);
+
+
+// 4. Phần Đấu
+const startBattleBtn = document.getElementById('start-battle-btn');
+const playerPokemonInput = document.getElementById('player-pokemon-input');
+const battleResultsDiv = document.getElementById('battle-results');
+
+startBattleBtn.addEventListener('click', async () => {
+    const playerQuery = playerPokemonInput.value.toLowerCase();
+    const randomOpponentId = Math.floor(Math.random() * 1000) + 1;
+
+    battleResultsDiv.innerHTML = '<p>Đang chuẩn bị trận đấu...</p>';
+
+    const [playerPokemon, opponentPokemon] = await Promise.all([
+        fetchPokemon(playerQuery),
+        fetchPokemon(randomOpponentId)
+    ]);
+
+    if (!playerPokemon || !opponentPokemon) {
+        battleResultsDiv.innerHTML = '<p>Không thể bắt đầu trận đấu. Vui lòng kiểm tra tên Pokémon của bạn.</p>';
+        return;
+    }
+
+    displayBattle(playerPokemon, opponentPokemon);
+});
+
+function displayBattle(player, opponent) {
+    const playerStats = player.stats.find(s => s.stat.name === 'attack').base_stat + player.stats.find(s => s.stat.name === 'defense').base_stat;
+    const opponentStats = opponent.stats.find(s => s.stat.name === 'attack').base_stat + opponent.stats.find(s => s.stat.name === 'defense').base_stat;
+
+    let winner;
+    if (playerStats > opponentStats) {
+        winner = 'Bạn thắng!';
+    } else if (opponentStats > playerStats) {
+        winner = 'Bạn thua rồi.';
+    } else {
+        winner = 'Hòa!';
+    }
+
+    battleResultsDiv.innerHTML = `
+        <div class="pokemon-card">
+            <h3>Bạn</h3>
+            <p>${player.name.toUpperCase()}</p>
+            <img src="${player.sprites.front_default}" alt="${player.name}">
+            <p>Tổng chỉ số công/thủ: ${playerStats}</p>
+        </div>
+        <div class="pokemon-card">
+            <h3>Đối thủ</h3>
+            <p>${opponent.name.toUpperCase()}</p>
+            <img src="${opponent.sprites.front_default}" alt="${opponent.name}">
+            <p>Tổng chỉ số công/thủ: ${opponentStats}</p>
+        </div>
+        <h3>Kết quả: ${winner}</h3>
+    `;
 }

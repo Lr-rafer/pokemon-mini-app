@@ -6,16 +6,62 @@ body {
     padding: 20px;
 }
 
-#pokemon-container {
-    margin: 20px 0;
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+nav button {
+    padding: 10px 15px;
+    margin: 0 5px;
+    border: 1px solid #ccc;
+    background: #f0f0f0;
+    cursor: pointer;
+}
+
+.pokemon-display {
     border: 1px solid #ccc;
     padding: 20px;
     border-radius: 8px;
     text-align: center;
+    margin-bottom: 20px;
+    min-height: 200px; /* Đảm bảo chiều cao tối thiểu */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
-#random-pokemon-btn {
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
+.search-box {
+    margin-bottom: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+.active {
+    display: block;
+}
+
+#quiz-choices button {
+    display: block;
+    margin: 10px auto;
+    width: 200px;
+    padding: 10px;
+    font-size: 1em;
+}
+
+#battle-results {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.pokemon-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+    margin: 0 10px;
 }

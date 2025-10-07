@@ -8,10 +8,49 @@
 </head>
 <body>
 
-    <h1>Bộ xem Pokémon ngẫu nhiên</h1>
-    <div id="pokemon-container">
-        </div>
-    <button id="random-pokemon-btn">Tìm Pokémon ngẫu nhiên</button>
+    <header>
+        <h1>Pokémon Mini App</h1>
+        <nav>
+            <button id="nav-random">Ngẫu nhiên</button>
+            <button id="nav-search">Tìm kiếm</button>
+            <button id="nav-quiz">Quiz</button>
+            <button id="nav-battle">Đấu</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="random-pokemon-section" class="active">
+            <h2>Pokémon ngẫu nhiên</h2>
+            <div id="random-container" class="pokemon-display"></div>
+            <button id="random-btn">Tìm Pokémon ngẫu nhiên</button>
+        </section>
+
+        <section id="search-pokemon-section" class="hidden">
+            <h2>Tìm kiếm Pokémon</h2>
+            <div class="search-box">
+                <input type="text" id="pokemon-search-input" placeholder="Nhập tên hoặc ID">
+                <button id="search-btn">Tìm kiếm</button>
+            </div>
+            <div id="search-container" class="pokemon-display"></div>
+        </section>
+
+        <section id="quiz-pokemon-section" class="hidden">
+            <h2>Quiz Pokémon</h2>
+            <div id="quiz-question"></div>
+            <div id="quiz-choices"></div>
+            <p id="quiz-feedback"></p>
+            <button id="quiz-next-btn" style="display:none;">Câu hỏi tiếp theo</button>
+        </section>
+
+        <section id="battle-pokemon-section" class="hidden">
+            <h2>Mô phỏng trận đấu</h2>
+            <div id="battle-select">
+                <input type="text" id="player-pokemon-input" placeholder="Nhập tên Pokémon của bạn">
+                <button id="start-battle-btn">Bắt đầu trận đấu</button>
+            </div>
+            <div id="battle-results"></div>
+        </section>
+    </main>
 
     <script src="script.js"></script>
 </body>
